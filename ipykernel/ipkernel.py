@@ -3,6 +3,7 @@
 import getpass
 import sys
 import traceback
+import uuid
 
 from IPython.core import release
 from ipython_genutils.py3compat import builtin_mod, PY3, unicode_type, safe_unicode
@@ -184,7 +185,7 @@ class IPythonKernel(KernelBase):
         # Ignore the incrememnting done by KernelBase, in favour of our shell's
         # execution counter.
         pass
-
+    
     def do_execute(self, code, silent, store_history=True,
                    user_expressions=None, allow_stdin=False):
         shell = self.shell # we'll need this a lot here
@@ -192,8 +193,15 @@ class IPythonKernel(KernelBase):
         self._forward_input(allow_stdin)
 
         reply_content = {}
+#debug print
+        #print("Before output")
         try:
+            #Edit - Jay Patel - assign cell_uuid to execution_count. cell_uuid is passed in user_expressions
+#debug print
+            #print("Before run cell")
+            shell.execution_count = user_expressions.get('cell_uuid')
             res = shell.run_cell(code, store_history=store_history, silent=silent)
+            #print("After run cell")
         finally:
             self._restore_input()
 
@@ -204,6 +212,8 @@ class IPythonKernel(KernelBase):
 
         if res.success:
             reply_content[u'status'] = u'ok'
+        elif isinstance(err, KeyboardInterrupt):
+            reply_content[u'status'] = u'abort'
         else:
             reply_content[u'status'] = u'error'
 
@@ -218,9 +228,16 @@ class IPythonKernel(KernelBase):
                           method='execute')
             reply_content['engine_info'] = e_info
 
-
+#debug print
         # Return the execution counter so clients can display prompts
-        reply_content['execution_count'] = shell.execution_count - 1
+        #sys.stdout.write("Execution count ipkernel:")
+        #print(shell.execution_count)
+        #Edit - Jay Patel - Assign the same cell_uuid (which is now execution_count) to reply_content['execution_count']
+        #modify execution count value - test
+        #shell.execution_count = uuid.uuid4().hex
+        reply_content['execution_count'] = shell.execution_count 
+        #reply_content['execution_count'] = shell.execution_count - 1
+        #reply_content['execution_count'] = chr(ord(self.execution_count) - 1)
 
         if 'traceback' in reply_content:
             self.log.info("Exception in execute request:\n%s", '\n'.join(reply_content['traceback']))
@@ -278,7 +295,7 @@ class IPythonKernel(KernelBase):
 
         return reply_content
 
-    def do_history(self, hist_access_type, output, raw, session=0, start=0,
+    def do_history(self, hist_access_type, output, raw, session=None, start=None,
                    stop=None, n=None, pattern=None, unique=False):
         if hist_access_type == 'tail':
             hist = self.shell.history_manager.get_tail(n, raw=raw, output=output,
@@ -294,10 +311,7 @@ class IPythonKernel(KernelBase):
         else:
             hist = []
 
-        return {
-            'status': 'ok',
-            'history' : list(hist),
-        }
+        return {'history' : list(hist)}
 
     def do_shutdown(self, restart):
         self.shell.exit_now = True
