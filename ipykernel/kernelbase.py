@@ -38,7 +38,7 @@ class Kernel(SingletonConfigurable):
 
     # attribute to override with a GUI
     eventloop = Any(None)
-
+    
     @observe('eventloop')
     def _update_eventloop(self, change):
         """schedule call to eventloop from IOLoop"""
@@ -112,7 +112,10 @@ class Kernel(SingletonConfigurable):
 
     # Track execution count here. For IPython, we override this to use the
     # execution count we store in the shell.
-    execution_count = 0
+#Edit - Jay Patel - Do not initialize execution_count to 0. Use the same execution_count instead.
+    #execution_count = 0
+    #execution_count = 'abcd'
+    #execution_count = chr(96)
 
     msg_types = [
         'execute_request', 'complete_request',
@@ -383,7 +386,11 @@ class Kernel(SingletonConfigurable):
         # Re-broadcast our input for the benefit of listening clients, and
         # start computing output
         if not silent:
-            self.execution_count += 1
+#test
+            #self.execution_count = uuid.uuid4().hex
+            #self.execution_count = new_uuid
+            #self.execution_count += 1
+            #self.execution_count = chr(ord(self.execution_count) + 1)
             self._publish_execute_input(code, parent, self.execution_count)
 
         reply_content = self.do_execute(code, silent, store_history,
@@ -467,14 +474,13 @@ class Kernel(SingletonConfigurable):
                    stop=None, n=None, pattern=None, unique=False):
         """Override in subclasses to access history.
         """
-        return {'status': 'ok', 'history': []}
+        return {'history': []}
 
     def connect_request(self, stream, ident, parent):
         if self._recorded_ports is not None:
             content = self._recorded_ports.copy()
         else:
             content = {}
-        content['status'] = 'ok'
         msg = self.session.send(stream, 'connect_reply',
                                 content, parent, ident)
         self.log.debug("%s", msg)
@@ -491,10 +497,8 @@ class Kernel(SingletonConfigurable):
         }
 
     def kernel_info_request(self, stream, ident, parent):
-        content = {'status': 'ok'}
-        content.update(self.kernel_info)
         msg = self.session.send(stream, 'kernel_info_reply',
-                                content, parent, ident)
+                                self.kernel_info, parent, ident)
         self.log.debug("%s", msg)
 
     def comm_info_request(self, stream, ident, parent):
@@ -510,7 +514,7 @@ class Kernel(SingletonConfigurable):
             }
         else:
             comms = {}
-        reply_content = dict(comms=comms, status='ok')
+        reply_content = dict(comms=comms)
         msg = self.session.send(stream, 'comm_info_reply',
                                 reply_content, parent, ident)
         self.log.debug("%s", msg)
@@ -684,7 +688,7 @@ class Kernel(SingletonConfigurable):
             raise StdinNotImplementedError(
                 "raw_input was called, but this frontend does not support input requests."
             )
-        return self._input_request(str(prompt),
+        return self._input_request(prompt,
             self._parent_ident,
             self._parent_header,
             password=False,
