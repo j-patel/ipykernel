@@ -3,7 +3,6 @@
 import getpass
 import sys
 import traceback
-import uuid
 
 from IPython.core import release
 from ipython_genutils.py3compat import builtin_mod, PY3, unicode_type, safe_unicode
@@ -193,15 +192,11 @@ class IPythonKernel(KernelBase):
         self._forward_input(allow_stdin)
 
         reply_content = {}
-#debug print
-        #print("Before output")
         try:
-            #Edit - Jay Patel - assign cell_uuid to execution_count. cell_uuid is passed in user_expressions
-#debug print
-            #print("Before run cell")
+            #Edit - assign cell_uuid to execution_count. cell_uuid is passed in user_expressions
             shell.execution_count = user_expressions.get('cell_uuid')
+            shell.source = user_expressions.get('source')
             res = shell.run_cell(code, store_history=store_history, silent=silent)
-            #print("After run cell")
         finally:
             self._restore_input()
 
