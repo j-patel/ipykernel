@@ -21,7 +21,6 @@ from jupyter_client.session import extract_header
 
 from ipython_genutils import py3compat
 from ipython_genutils.py3compat import unicode_type
-
 #-----------------------------------------------------------------------------
 # Globals
 #-----------------------------------------------------------------------------
@@ -195,18 +194,15 @@ class OutStream(object):
     
     Output is handed off to an IO Thread
     """
-
     # The time interval between automatic flushes, in seconds.
     flush_interval = 0.2
     topic=None
-
+    
     def __init__(self, session, pub_thread, name, pipe=None):
         if pipe is not None:
             warnings.warn("pipe argument to OutStream is deprecated and ignored",
                 DeprecationWarning)
         self.encoding = 'UTF-8'
-        # This is necessary for compatibility with Python built-in streams
-        self.errors = None
         self.session = session
         if not isinstance(pub_thread, IOPubThread):
             # Backward-compat: given socket, not thread. Wrap in a thread.
@@ -218,6 +214,7 @@ class OutStream(object):
         self.name = name
         self.topic = b'stream.' + py3compat.cast_bytes(name)
         self.parent_header = {}
+        self.cell_uuid = ''
         self._master_pid = os.getpid()
         self._flush_lock = threading.Lock()
         self._flush_timeout = None
@@ -284,7 +281,11 @@ class OutStream(object):
             # since pub_thread is itself fork-safe.
             # There should be a better way to do this.
             self.session.pid = os.getpid()
-            content = {u'name':self.name, u'text':data}
+            try:
+                self.cell_uuid = sys.stdout.cell_uuid
+            except:
+                self.cell_uuid = ''
+            content = {u'name':self.name, u'text':data, u'execution_count':self.cell_uuid}
             self.session.send(self.pub_thread, u'stream', content=content,
                 parent=self.parent_header, ident=self.topic)
     
