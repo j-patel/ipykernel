@@ -110,12 +110,8 @@ class Kernel(SingletonConfigurable):
     # set of aborted msg_ids
     aborted = Set()
 
-    # Track execution count here. For IPython, we override this to use the
-    # execution count we store in the shell.
-#Edit - Jay Patel - Do not initialize execution_count to 0. Use the same execution_count instead.
+    # Do not initialize execution_count to 0. Use the same execution_count instead. It is a string now instead of an integer
     #execution_count = 0
-    #execution_count = 'abcd'
-    #execution_count = chr(96)
 
     msg_types = [
         'execute_request', 'complete_request',
@@ -386,11 +382,7 @@ class Kernel(SingletonConfigurable):
         # Re-broadcast our input for the benefit of listening clients, and
         # start computing output
         if not silent:
-#test
-            #self.execution_count = uuid.uuid4().hex
-            #self.execution_count = new_uuid
-            #self.execution_count += 1
-            #self.execution_count = chr(ord(self.execution_count) + 1)
+            #Do not increment the execution counter
             self._publish_execute_input(code, parent, self.execution_count)
 
         reply_content = self.do_execute(code, silent, store_history,

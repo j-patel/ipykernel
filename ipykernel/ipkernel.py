@@ -50,7 +50,6 @@ class IPythonKernel(KernelBase):
         self.shell.displayhook.topic = self._topic('execute_result')
         self.shell.display_pub.session = self.session
         self.shell.display_pub.pub_socket = self.iopub_socket
-
         self.comm_manager = CommManager(parent=self, kernel=self)
 
         self.shell.configurables.append(self.comm_manager)
@@ -194,6 +193,7 @@ class IPythonKernel(KernelBase):
         reply_content = {}
         try:
             #Edit - assign cell_uuid to execution_count. cell_uuid is passed in user_expressions
+            
             shell.execution_count = user_expressions.get('cell_uuid')
             shell.source = user_expressions.get('source')
             res = shell.run_cell(code, store_history=store_history, silent=silent)
@@ -225,15 +225,9 @@ class IPythonKernel(KernelBase):
 
 #debug print
         # Return the execution counter so clients can display prompts
-        #sys.stdout.write("Execution count ipkernel:")
-        #print(shell.execution_count)
-        #Edit - Jay Patel - Assign the same cell_uuid (which is now execution_count) to reply_content['execution_count']
-        #modify execution count value - test
-        #shell.execution_count = uuid.uuid4().hex
+        #Assign the same cell_uuid (which is now execution_count) to reply_content['execution_count']
         reply_content['execution_count'] = shell.execution_count 
-        #reply_content['execution_count'] = shell.execution_count - 1
-        #reply_content['execution_count'] = chr(ord(self.execution_count) - 1)
-
+        
         if 'traceback' in reply_content:
             self.log.info("Exception in execute request:\n%s", '\n'.join(reply_content['traceback']))
 
@@ -243,9 +237,17 @@ class IPythonKernel(KernelBase):
         if reply_content['status'] == 'ok':
             reply_content[u'user_expressions'] = \
                          shell.user_expressions(user_expressions or {})
+            if shell.execution_count in shell.parent_uuids:
+                #send uuids of the last executed cells in the upstream of the currently executed cell
+                reply_content[u'parent_uuids'] = shell.last_executed_cells
+            else:
+                reply_content[u'parent_uuids'] = {}
+            reply_content[u'upstream'] = list(shell.upstream)
         else:
             # If there was an error, don't even try to compute expressions
             reply_content[u'user_expressions'] = {}
+            reply_content[u'parent_uuids'] = {}
+            reply_content[u'upstream'] = {}
 
         # Payloads should be retrieved regardless of outcome, so we can both
         # recover partial output (that could have been generated early in a

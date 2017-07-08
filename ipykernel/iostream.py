@@ -197,14 +197,12 @@ class OutStream(object):
     # The time interval between automatic flushes, in seconds.
     flush_interval = 0.2
     topic=None
-
+    
     def __init__(self, session, pub_thread, name, pipe=None):
         if pipe is not None:
             warnings.warn("pipe argument to OutStream is deprecated and ignored",
                 DeprecationWarning)
         self.encoding = 'UTF-8'
-        # This is necessary for compatibility with Python built-in streams
-        self.errors = None
         self.session = session
         if not isinstance(pub_thread, IOPubThread):
             # Backward-compat: given socket, not thread. Wrap in a thread.
