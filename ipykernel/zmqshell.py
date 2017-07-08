@@ -99,6 +99,7 @@ class ZMQDisplayPublisher(DisplayPublisher):
         content = {}
         content['data'] = encode_images(data)
         content['metadata'] = metadata
+        content['execution_count'] = self.cell_uuid
 
         # Use 2-stage process to send a message,
         # in order to put it through the transform
@@ -509,6 +510,7 @@ class ZMQInteractiveShell(InteractiveShell):
             u'traceback' : stb,
             u'ename' : unicode_type(etype.__name__),
             u'evalue' : py3compat.safe_unicode(evalue),
+            u'execution_count' : sys.stderr.cell_uuid
         }
 
         dh = self.displayhook
